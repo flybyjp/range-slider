@@ -272,14 +272,9 @@
 
 	RS.prototype.onChange = function () {
 		var _this = this;
-
-		if (this.timeout) clearTimeout(this.timeout);
-
-		this.timeout = setTimeout(function () {
-			if (_this.conf.onChange && typeof _this.conf.onChange === 'function') {			
-				return _this.conf.onChange(_this.input.value);
-			}
-		}, 500);
+        if (_this.conf.onChange && typeof _this.conf.onChange === 'function') {			
+            return _this.conf.onChange(_this.input.value);
+        }
 	};
 
 	RS.prototype.onResize = function () {
