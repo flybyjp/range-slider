@@ -82,7 +82,7 @@
 			this.pointerL.appendChild(this.tipL);
 		}
 		this.slider.appendChild(this.selected);
-		this.slider.appendChild(this.scale);
+		if (this.conf.scale) this.slider.appendChild(this.scale);
 		this.slider.appendChild(this.pointerL);
 
 		if (this.conf.range) {
@@ -93,10 +93,10 @@
 
 		this.input.parentNode.insertBefore(this.slider, this.input.nextSibling);
 
-        if (this.conf.width) this.slider.style.width = parseInt(this.conf.width) + 'px';
-		this.sliderLeft = this.slider.getBoundingClientRect().left;
-		this.sliderWidth = this.slider.clientWidth;
-		this.pointerWidth = this.pointerL.clientWidth;
+        if (this.conf.width) this.slider.style.height = parseInt(this.conf.width) + 'px';
+		this.sliderLeft = this.slider.getBoundingClientRect().top;
+		this.sliderWidth = this.slider.clientHeight;
+		this.pointerWidth = this.pointerL.clientHeight;
 
 		if (!this.conf.scale) this.slider.classList.add(this.cls.noscale);
 
@@ -134,14 +134,14 @@
 			span.appendChild(ins);
 			this.scale.appendChild(span);
 
-			span.style.width = i === iLen - 1 ? 0 : this.step + 'px';
+			span.style.height = i === iLen - 1 ? 0 : this.step + 'px';
 
 			if (!this.conf.labels) {
 				if (i === 0 || i === iLen - 1) ins.innerHTML = this.conf.values[i]
 			}
 			else ins.innerHTML = this.conf.values[i];
 
-			ins.style.marginLeft = (ins.clientWidth / 2) * - 1 + 'px';
+			ins.style.marginLeft = (ins.clientHeight / 2) * - 1 + 'px';
 		}
 		return this.addEvents();
 	};
@@ -152,7 +152,7 @@
 		var pieces = this.slider.querySelectorAll('span');
 
 		for (var i = 0, iLen = pieces.length; i < iLen; i++)
-			pieces[i].style.width = this.step + 'px';
+			pieces[i].style.height = this.step + 'px';
 
 		return this.setValues();
 	};
@@ -189,7 +189,7 @@
 
 	RS.prototype.move = function (e) {
 		if (this.activePointer && !this.conf.disabled) {
-			var coordX = e.type === 'touchmove' ? e.touches[0].clientX : e.pageX,
+			var coordX = e.type === 'touchmove' ? e.touches[0].clientY : e.pageY,
 				index = coordX - this.sliderLeft - (this.pointerWidth / 2);
 
 			index = Math.round(index / this.step);
@@ -223,7 +223,7 @@
 		if (this.conf.range && this.values.start > this.values.end)
 			this.values.start = this.values.end;
 
-		this.pointerL.style.left = (this.values[activePointer] * this.step - (this.pointerWidth / 2)) + 'px';
+		this.pointerL.style.top = (this.values[activePointer] * this.step - (this.pointerWidth / 2)) + 'px';
 
 		if (this.conf.range) {
 			if (this.conf.tooltip) {
@@ -231,7 +231,7 @@
 				this.tipR.innerHTML = this.conf.values[this.values.end];
 			}
 			this.input.value = this.conf.values[this.values.start] + ',' + this.conf.values[this.values.end];
-			this.pointerR.style.left = (this.values.end * this.step - (this.pointerWidth / 2)) + 'px';
+			this.pointerR.style.top = (this.values.end * this.step - (this.pointerWidth / 2)) + 'px';
 		}
 		else {
 			if (this.conf.tooltip)
@@ -242,8 +242,8 @@
 		if (this.values.end > this.conf.values.length - 1) this.values.end = this.conf.values.length - 1;
 		if (this.values.start < 0) this.values.start = 0;
 
-		this.selected.style.width = (this.values.end - this.values.start) * this.step + 'px';
-		this.selected.style.left = this.values.start * this.step + 'px';		
+		this.selected.style.height = (this.conf.values.length - this.values.end) * this.step + 'px';
+		this.selected.style.top = this.values.end * this.step + 'px';		
 		
 		return this.onChange();
 	};
@@ -252,7 +252,7 @@
 
 		if (this.conf.disabled) return;
 
-		var idx = Math.round((e.clientX - this.sliderLeft) / this.step);
+		var idx = Math.round((e.clientY - this.sliderLeft) / this.step);
 
 		if (idx > this.conf.values.length - 1) idx = this.conf.values.length - 1;
 		if (idx < 0) idx = 0;
@@ -283,8 +283,8 @@
 	};
 
 	RS.prototype.onResize = function () {
-		this.sliderLeft = this.slider.getBoundingClientRect().left;
-		this.sliderWidth = this.slider.clientWidth;
+		this.sliderLeft = this.slider.getBoundingClientRect().top;
+		this.sliderWidth = this.slider.clientHeight;
 		return this.updateScale();
 	};
 
