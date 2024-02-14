@@ -38,10 +38,11 @@
         }
         .container {
             width: 80%;
+            height: 100vh;
             margin: 70px auto;
         }
         .slider-container {
-            width: 90%;
+            height: 90%;
             max-width: 500px;
             margin: 0 auto 50px;
         }
@@ -78,7 +79,7 @@
         }
 
     </style>
-    <link rel="stylesheet" href="css/rSlider.min.css">
+    <link rel="stylesheet" href="src/css/rSlider.css">
 </head>
 <body>
     <div class="top">
@@ -86,9 +87,6 @@
     </div>
 
     <div class="container">
-        <div class="slider-container">
-            <input type="text" id="slider" class="slider" />
-        </div>
         <div class="slider-container">
             <input type="text" id="slider2" class="slider" />
         </div>
@@ -204,45 +202,23 @@
         </div>
     </div>
     
-    <script src="js/rSlider.min.js"></script>
+    <script src="src/js/rSlider.js"></script>
     <script>
         (function () {
             'use strict';
 
             var init = function () {                
-
                 var slider2 = new rSlider({
                     target: '#slider2',
-                    values: [0, 1, 2, 3, 4, 5, 6, '7', 8],
+                    values: {min: -128, max: 127},
                     range: false,
                     set: [5],
                     tooltip: false,
                     onChange: function (vals) {
                         console.log(vals);
-                    }
-                });
-
-                var slider3 = new rSlider({
-                    target: '#slider3',
-                    values: {min: 0, max: 100},
-                    step: 10,
-                    range: true,
-                    set: [10, 40],
-                    scale: true,
-                    labels: false,
-                    onChange: function (vals) {
-                        console.log(vals);
-                    }
-                });
-
-                var slider = new rSlider({
-                    target: '#slider',
-                    values: [2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015],
-                    range: true,
-                    set: [2010, 2013],
-                    onChange: function (vals) {
-                        console.log(vals);
-                    }
+                    },
+                    scale: false,
+                    step: 1,
                 });
             };
             window.onload = init;
