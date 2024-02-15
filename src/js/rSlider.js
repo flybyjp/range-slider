@@ -48,7 +48,8 @@ function find_touch_idx_by_id(target_touch, touch_list){
 			tooltip:	true,
 			step: 		null,
 			disabled:	false,
-			onChange:	null
+			onChange:	null,
+			onDrop: null,
 		};
 
 		this.cls = {
@@ -253,15 +254,18 @@ function find_touch_idx_by_id(target_touch, touch_list){
 		}
 		this.activePointer = null;
 		this.ongoing_touch = null;
+        if (this.conf.onDrop && typeof this.conf.onDrop === 'function') {			
+			this.conf.onDrop();
+        }
 	};
 
 	RS.prototype.setValues = function (start, end) {
 		var activePointer = this.conf.range ? 'start' : 'end';
 
-		if (start && this.conf.values.indexOf(start) > -1)
+		if (start != null && this.conf.values.indexOf(start) > -1)
 			this.values[activePointer] = this.conf.values.indexOf(start);
 
-		if (end && this.conf.values.indexOf(end) > -1)
+		if (end != null && this.conf.values.indexOf(end) > -1)
 			this.values.end = this.conf.values.indexOf(end);
 
 		if (this.conf.range && this.values.start > this.values.end)
