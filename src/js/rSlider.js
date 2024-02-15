@@ -1,3 +1,16 @@
+function copy_touch({identifier, pageX, pageY}){
+	return {identifier, pageX, pageY};
+}
+
+function find_touch_idx_by_id(target_touch, touch_list){
+	for (let i = 0; i < touch_list.length; i++){
+		if (touch_list[i].identifier == target_touch.identifier){
+			return i;
+		}
+	}
+	return -1;
+}
+
 (function () {
 	'use strict';
 
@@ -18,6 +31,7 @@
 		this.tipR			= null;
 		this.timeout		= null;
 		this.valRange		= false;
+		this.ongoing_touch = null;
 
 		this.values = {
 			start:	null,
@@ -34,7 +48,8 @@
 			tooltip:	true,
 			step: 		null,
 			disabled:	false,
-			onChange:	null
+			onChange:	null,
+			onDrop: null,
 		};
 
 		this.cls = {
@@ -61,6 +76,8 @@
 		this.inputDisplay = getComputedStyle(this.input, null).display;
 		this.input.style.display = 'none';
 		this.valRange = !(this.conf.values instanceof Array);
+
+		this.is_touch = 'ontouchstart' in window;
 
 		if (this.valRange) {
 			if (!this.conf.values.hasOwnProperty('min') || !this.conf.values.hasOwnProperty('max'))
@@ -93,10 +110,10 @@
 
 		this.input.parentNode.insertBefore(this.slider, this.input.nextSibling);
 
-        if (this.conf.width) this.slider.style.width = parseInt(this.conf.width) + 'px';
-		this.sliderLeft = this.slider.getBoundingClientRect().left;
-		this.sliderWidth = this.slider.clientWidth;
-		this.pointerWidth = this.pointerL.clientWidth;
+        if (this.conf.width) this.slider.style.height = parseInt(this.conf.width) + 'px';
+		this.sliderLeft = this.slider.getBoundingClientRect().top;
+		this.sliderWidth = this.slider.clientHeight;
+		this.pointerWidth = this.pointerL.clientHeight;
 
 		if (!this.conf.scale) this.slider.classList.add(this.cls.noscale);
 
@@ -134,14 +151,16 @@
 			span.appendChild(ins);
 			this.scale.appendChild(span);
 
-			span.style.width = i === iLen - 1 ? 0 : this.step + 'px';
+			span.style.height = i === iLen - 1 ? 0 : this.step + 'px';
 
-			if (!this.conf.labels) {
-				if (i === 0 || i === iLen - 1) ins.innerHTML = this.conf.values[i]
+			// TODO: fix labels' inproperty positions.
+			// <span>-es are unexpectedly placed right of the previous <span>, while
+			// it is expected to be placed down the previous one.
+			if(this.conf.labels) {
+				ins.innerHTML = this.conf.values[i];
 			}
-			else ins.innerHTML = this.conf.values[i];
 
-			ins.style.marginLeft = (ins.clientWidth / 2) * - 1 + 'px';
+			ins.style.marginTop = (ins.clientHeight / 2) * - 1 + 'px';
 		}
 		return this.addEvents();
 	};
@@ -152,7 +171,7 @@
 		var pieces = this.slider.querySelectorAll('span');
 
 		for (var i = 0, iLen = pieces.length; i < iLen; i++)
-			pieces[i].style.width = this.step + 'px';
+			pieces[i].style.height = this.step + 'px';
 
 		return this.setValues();
 	};
@@ -180,6 +199,11 @@
 
 		if (this.conf.disabled) return;
 
+		if ( e.type === 'touchstart' ){
+			const touch = e.changedTouches[0];
+			this.ongoing_touch = copy_touch(touch);
+		}
+
 		var dir = e.target.getAttribute('data-dir');
 		if (dir === 'left') this.activePointer = this.pointerL;
 		if (dir === 'right') this.activePointer = this.pointerR;
@@ -189,7 +213,16 @@
 
 	RS.prototype.move = function (e) {
 		if (this.activePointer && !this.conf.disabled) {
-			var coordX = e.type === 'touchmove' ? e.touches[0].clientX : e.pageX,
+			let touch = null;
+			if(e.type === 'touchmove'){
+				const touch_idx = find_touch_idx_by_id(this.ongoing_touch, e.changedTouches);
+				if (touch_idx == -1){
+					// The touchmove event was not for this instance but the other.
+					return;
+				}
+				touch = e.changedTouches[touch_idx];
+			}
+			var coordX = e.type === 'touchmove' ? touch.clientY : e.pageY,
 				index = coordX - this.sliderLeft - (this.pointerWidth / 2);
 
 			index = Math.round(index / this.step);
@@ -207,23 +240,38 @@
 		}
 	};
 
-	RS.prototype.drop = function () {
+	RS.prototype.drop = function (e) {
+		if(e.type === 'touchend' || e.type === 'touchcancel'){
+			if(!(this.activePointer && this.ongoing_touch != null)){
+				// The touchup event was not for this instance but the other.
+				return;
+			}
+			const touch_idx = find_touch_idx_by_id(this.ongoing_touch, e.changedTouches);
+			if(touch_idx == -1){
+				// The touchup event was not for this instance but the other.
+				return;
+			}
+		}
 		this.activePointer = null;
+		this.ongoing_touch = null;
+        if (this.conf.onDrop && typeof this.conf.onDrop === 'function') {			
+			this.conf.onDrop();
+        }
 	};
 
 	RS.prototype.setValues = function (start, end) {
 		var activePointer = this.conf.range ? 'start' : 'end';
 
-		if (start && this.conf.values.indexOf(start) > -1)
+		if (start != null && this.conf.values.indexOf(start) > -1)
 			this.values[activePointer] = this.conf.values.indexOf(start);
 
-		if (end && this.conf.values.indexOf(end) > -1)
+		if (end != null && this.conf.values.indexOf(end) > -1)
 			this.values.end = this.conf.values.indexOf(end);
 
 		if (this.conf.range && this.values.start > this.values.end)
 			this.values.start = this.values.end;
 
-		this.pointerL.style.left = (this.values[activePointer] * this.step - (this.pointerWidth / 2)) + 'px';
+		this.pointerL.style.top = (this.values[activePointer] * this.step - (this.pointerWidth / 2)) + 'px';
 
 		if (this.conf.range) {
 			if (this.conf.tooltip) {
@@ -231,7 +279,7 @@
 				this.tipR.innerHTML = this.conf.values[this.values.end];
 			}
 			this.input.value = this.conf.values[this.values.start] + ',' + this.conf.values[this.values.end];
-			this.pointerR.style.left = (this.values.end * this.step - (this.pointerWidth / 2)) + 'px';
+			this.pointerR.style.top = (this.values.end * this.step - (this.pointerWidth / 2)) + 'px';
 		}
 		else {
 			if (this.conf.tooltip)
@@ -242,8 +290,14 @@
 		if (this.values.end > this.conf.values.length - 1) this.values.end = this.conf.values.length - 1;
 		if (this.values.start < 0) this.values.start = 0;
 
-		this.selected.style.width = (this.values.end - this.values.start) * this.step + 'px';
-		this.selected.style.left = this.values.start * this.step + 'px';		
+		const selected_size = (this.conf.values.length / 2.0 - this.values.end) * this.step;
+		const selected_size_abs = selected_size > 0 ? selected_size : -selected_size;
+		this.selected.style.height = selected_size_abs + 'px';
+		if(selected_size > 0){
+			this.selected.style.top = this.values.end * this.step + 'px'
+		}else{
+			this.selected.style.top = (this.conf.values.length / 2.0) * this.step + 'px';
+		}
 		
 		return this.onChange();
 	};
@@ -252,7 +306,7 @@
 
 		if (this.conf.disabled) return;
 
-		var idx = Math.round((e.clientX - this.sliderLeft) / this.step);
+		var idx = Math.round((e.clientY - this.sliderLeft) / this.step);
 
 		if (idx > this.conf.values.length - 1) idx = this.conf.values.length - 1;
 		if (idx < 0) idx = 0;
@@ -272,19 +326,14 @@
 
 	RS.prototype.onChange = function () {
 		var _this = this;
-
-		if (this.timeout) clearTimeout(this.timeout);
-
-		this.timeout = setTimeout(function () {
-			if (_this.conf.onChange && typeof _this.conf.onChange === 'function') {			
-				return _this.conf.onChange(_this.input.value);
-			}
-		}, 500);
+        if (_this.conf.onChange && typeof _this.conf.onChange === 'function') {			
+            return _this.conf.onChange(_this.input.value);
+        }
 	};
 
 	RS.prototype.onResize = function () {
-		this.sliderLeft = this.slider.getBoundingClientRect().left;
-		this.sliderWidth = this.slider.clientWidth;
+		this.sliderLeft = this.slider.getBoundingClientRect().top;
+		this.sliderWidth = this.slider.clientHeight;
 		return this.updateScale();
 	};
 
@@ -348,3 +397,5 @@
 	window.rSlider = RS;
 
 })();
+
+export var rSlider = window.rSlider;
