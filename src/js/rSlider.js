@@ -76,6 +76,8 @@ function find_touch_idx_by_id(target_touch, touch_list){
 		this.input.style.display = 'none';
 		this.valRange = !(this.conf.values instanceof Array);
 
+		this.is_touch = 'ontouchstart' in window;
+
 		if (this.valRange) {
 			if (!this.conf.values.hasOwnProperty('min') || !this.conf.values.hasOwnProperty('max'))
 				return console.log('Missing min or max value...');
@@ -196,8 +198,10 @@ function find_touch_idx_by_id(target_touch, touch_list){
 
 		if (this.conf.disabled) return;
 
-		const touch = e.changedTouches[0];
-		this.ongoing_touch = copy_touch(touch);
+		if ( e.type === 'touchstart' ){
+			const touch = e.changedTouches[0];
+			this.ongoing_touch = copy_touch(touch);
+		}
 
 		var dir = e.target.getAttribute('data-dir');
 		if (dir === 'left') this.activePointer = this.pointerL;
@@ -207,14 +211,16 @@ function find_touch_idx_by_id(target_touch, touch_list){
 	};
 
 	RS.prototype.move = function (e) {
-		if (this.activePointer && !this.conf.disabled && this.ongoing_touch != null) {
+		if (this.activePointer && !this.conf.disabled) {
 			let touch = null;
-			const touch_idx = find_touch_idx_by_id(this.ongoing_touch, e.changedTouches);
-			if (touch_idx == -1){
-				// The touchmove event was not for this instance but the other.
-				return;
+			if(e.type === 'touchmove'){
+				const touch_idx = find_touch_idx_by_id(this.ongoing_touch, e.changedTouches);
+				if (touch_idx == -1){
+					// The touchmove event was not for this instance but the other.
+					return;
+				}
+				touch = e.changedTouches[touch_idx];
 			}
-			touch = e.changedTouches[touch_idx];
 			var coordX = e.type === 'touchmove' ? touch.clientY : e.pageY,
 				index = coordX - this.sliderLeft - (this.pointerWidth / 2);
 
@@ -234,14 +240,16 @@ function find_touch_idx_by_id(target_touch, touch_list){
 	};
 
 	RS.prototype.drop = function (e) {
-		if(!(this.activePointer && this.ongoing_touch != null)){
-			// The touchup event was not for this instance but the other.
-			return;
-		}
-		const touch_idx = find_touch_idx_by_id(this.ongoing_touch, e.changedTouches);
-		if(touch_idx == -1){
-			// The touchup event was not for this instance but the other.
-			return;
+		if(e.type === 'touchend' || e.type === 'touchcancel'){
+			if(!(this.activePointer && this.ongoing_touch != null)){
+				// The touchup event was not for this instance but the other.
+				return;
+			}
+			const touch_idx = find_touch_idx_by_id(this.ongoing_touch, e.changedTouches);
+			if(touch_idx == -1){
+				// The touchup event was not for this instance but the other.
+				return;
+			}
 		}
 		this.activePointer = null;
 		this.ongoing_touch = null;
@@ -278,8 +286,14 @@ function find_touch_idx_by_id(target_touch, touch_list){
 		if (this.values.end > this.conf.values.length - 1) this.values.end = this.conf.values.length - 1;
 		if (this.values.start < 0) this.values.start = 0;
 
-		this.selected.style.height = (this.conf.values.length - this.values.end) * this.step + 'px';
-		this.selected.style.top = this.values.end * this.step + 'px';		
+		const selected_size = (this.conf.values.length / 2.0 - this.values.end) * this.step;
+		const selected_size_abs = selected_size > 0 ? selected_size : -selected_size;
+		this.selected.style.height = selected_size_abs + 'px';
+		if(selected_size > 0){
+			this.selected.style.top = this.values.end * this.step + 'px'
+		}else{
+			this.selected.style.top = (this.conf.values.length / 2.0) * this.step + 'px';
+		}
 		
 		return this.onChange();
 	};
