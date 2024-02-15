@@ -136,10 +136,12 @@
 
 			span.style.height = i === iLen - 1 ? 0 : this.step + 'px';
 
-			if (!this.conf.labels) {
-				if (i === 0 || i === iLen - 1) ins.innerHTML = this.conf.values[i]
+			// TODO: fix labels' inproperty positions.
+			// <span>-es are unexpectedly placed right of the previous <span>, while
+			// it is expected to be placed down the previous one.
+			if(this.conf.labels) {
+				ins.innerHTML = this.conf.values[i];
 			}
-			else ins.innerHTML = this.conf.values[i];
 
 			ins.style.marginTop = (ins.clientHeight / 2) * - 1 + 'px';
 		}
@@ -343,3 +345,5 @@
 	window.rSlider = RS;
 
 })();
+
+export var rSlider = window.rSlider;
