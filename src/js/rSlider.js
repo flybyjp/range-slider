@@ -82,7 +82,7 @@
 			this.pointerL.appendChild(this.tipL);
 		}
 		this.slider.appendChild(this.selected);
-		if (this.conf.scale) this.slider.appendChild(this.scale);
+		this.slider.appendChild(this.scale);
 		this.slider.appendChild(this.pointerL);
 
 		if (this.conf.range) {
@@ -141,7 +141,7 @@
 			}
 			else ins.innerHTML = this.conf.values[i];
 
-			ins.style.marginLeft = (ins.clientHeight / 2) * - 1 + 'px';
+			ins.style.marginTop = (ins.clientHeight / 2) * - 1 + 'px';
 		}
 		return this.addEvents();
 	};
