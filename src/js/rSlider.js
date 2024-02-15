@@ -1,3 +1,16 @@
+function copy_touch({identifier, pageX, pageY}){
+	return {identifier, pageX, pageY};
+}
+
+function find_touch_idx_by_id(target_touch, touch_list){
+	for (let i = 0; i < touch_list.length; i++){
+		if (touch_list[i].identifier == target_touch.identifier){
+			return i;
+		}
+	}
+	return -1;
+}
+
 (function () {
 	'use strict';
 
@@ -18,6 +31,7 @@
 		this.tipR			= null;
 		this.timeout		= null;
 		this.valRange		= false;
+		this.ongoing_touch = null;
 
 		this.values = {
 			start:	null,
@@ -182,6 +196,9 @@
 
 		if (this.conf.disabled) return;
 
+		const touch = e.changedTouches[0];
+		this.ongoing_touch = copy_touch(touch);
+
 		var dir = e.target.getAttribute('data-dir');
 		if (dir === 'left') this.activePointer = this.pointerL;
 		if (dir === 'right') this.activePointer = this.pointerR;
@@ -190,8 +207,15 @@
 	};
 
 	RS.prototype.move = function (e) {
-		if (this.activePointer && !this.conf.disabled) {
-			var coordX = e.type === 'touchmove' ? e.touches[0].clientY : e.pageY,
+		if (this.activePointer && !this.conf.disabled && this.ongoing_touch != null) {
+			let touch = null;
+			const touch_idx = find_touch_idx_by_id(this.ongoing_touch, e.changedTouches);
+			if (touch_idx == -1){
+				// The touchmove event was not for this instance but the other.
+				return;
+			}
+			touch = e.changedTouches[touch_idx];
+			var coordX = e.type === 'touchmove' ? touch.clientY : e.pageY,
 				index = coordX - this.sliderLeft - (this.pointerWidth / 2);
 
 			index = Math.round(index / this.step);
@@ -209,8 +233,18 @@
 		}
 	};
 
-	RS.prototype.drop = function () {
+	RS.prototype.drop = function (e) {
+		if(!(this.activePointer && this.ongoing_touch != null)){
+			// The touchup event was not for this instance but the other.
+			return;
+		}
+		const touch_idx = find_touch_idx_by_id(this.ongoing_touch, e.changedTouches);
+		if(touch_idx == -1){
+			// The touchup event was not for this instance but the other.
+			return;
+		}
 		this.activePointer = null;
+		this.ongoing_touch = null;
 	};
 
 	RS.prototype.setValues = function (start, end) {
