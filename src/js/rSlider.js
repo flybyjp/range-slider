@@ -144,24 +144,6 @@ function find_touch_idx_by_id(target_touch, touch_list){
 	RS.prototype.createScale = function (resize) {
 		this.step = this.sliderWidth / (this.conf.values.length - 1);
 
-		for (var i = 0, iLen = this.conf.values.length; i < iLen; i++) {
-			var span = createElement('span'),
-				ins = createElement('ins');
-
-			span.appendChild(ins);
-			this.scale.appendChild(span);
-
-			span.style.height = i === iLen - 1 ? 0 : this.step + 'px';
-
-			// TODO: fix labels' inproperty positions.
-			// <span>-es are unexpectedly placed right of the previous <span>, while
-			// it is expected to be placed down the previous one.
-			if(this.conf.labels) {
-				ins.innerHTML = this.conf.values[i];
-			}
-
-			ins.style.marginTop = (ins.clientHeight / 2) * - 1 + 'px';
-		}
 		return this.addEvents();
 	};
 
